@@ -1,0 +1,22 @@
+{
+  "firestore": [
+    { "database": "(default)", "rules": "firestore.rules" },
+    { "database": "valett", "rules": "firestore.rules" }
+  ],
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "hosting": {
+    "public": "out",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      { "source": "/j/:slug/config.json", "destination": "/j/:slug/config.json" },
+      { "source": "/j/:slug/theme.css", "destination": "/j/:slug/theme.css" },
+      { "source": "**", "destination": "/index.html" }
+    ]
+  },
+  "functions": {
+    "source": "functions",
+    "predeploy": ["npm run build --prefix functions"]
+  }
+}

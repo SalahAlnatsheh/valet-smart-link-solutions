@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global: slugs are read-only for public (resolve tenant)
+    match /slugs/{slug} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /countryProfiles/{countryCode} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Tenants: only server (admin) can write; clients read tenant doc for config
+    match /tenants/{tenantId} {
+      allow read: if true;
+      allow write: if false;
+
+      match /users/{userId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null && ((get(/databases/$(database)/tenants/$(tenantId)/users/$(request.auth.uid)).exists == true && get(/databases/$(database)/tenants/$(tenantId)/users/$(request.auth.uid)).data.role in ['admin', 'manager']) || request.auth.uid == userId);
+      }
+
+      match /tickets/{ticketId} {
+        allow read, write: if request.auth != null;
+        allow create: if request.auth != null;
+        match /photos/{photoId} {
+          allow read, write: if request.auth != null;
+        }
+      }
+
+      // Public tickets: staff can create when creating a ticket; updates via Cloud Functions
+      match /publicTickets/{publicId} {
+        allow read: if true;
+        allow create: if request.auth != null;
+        allow update, delete: if false;
+      }
+
+      match /events/{eventId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update, delete: if false;
+      }
+
+      match /payments/{paymentId} {
+        allow read: if request.auth != null;
+        allow write: if false;
+      }
+
+      match /shifts/{shiftId} {
+        allow read, write: if request.auth != null;
+      }
+
+      // Push subscriptions: only server (API) writes via Admin SDK; no client access
+      match /pushSubscriptions/{publicId} {
+        allow read, write: if false;
+      }
+    }
+  }
+}
